@@ -1,10 +1,13 @@
 import fetch from "node-fetch";
 import express from "express";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+require("dotenv").config();
 
-//const spotify_client_id = `${process.env.SPOTIFY_CLIENT_ID}`
-const spotify_client_id = 'b32001087f804ee7a69d045e5a1ca07c'
-//const spotify_client_secret = `${process.env.SPOTIFY_CLIENT_SECRET}`;
-const spotify_client_secret = '12888a6f30ec46ffb9948af158368d0f'
+var spotify_client_id = process.env.SPOTIFY_CLIENT_ID;
+// const spotify_client_id = 'b32001087f804ee7a69d045e5a1ca07c'
+var spotify_client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+// const spotify_client_secret = '8beea0d73dba41c7ab9544df96011799'
 const spotify_redirect_uri = "http://localhost:3000/callback";
 
 global.access_token;
@@ -35,6 +38,7 @@ app.get("/authorize", (req, res) => {
     scope: "user-library-read",
     redirect_uri: spotify_redirect_uri
   })
+  console.log("client ID is " + process.env.SPOTIFY_CLIENT_ID)
   console.log(spotify_client_id)
   console.log(auth_query_parameters)
   res.redirect('https://accounts.spotify.com/authorize?' + auth_query_parameters.toString());
@@ -78,11 +82,27 @@ const getData = async (endpoint) => {
   return data;
 }
 
+
+
 app.get("/dashboard", async(req,res) => {
   const userInfo = await getData("/me");
   const tracks = await getData("/me/tracks?limit=10");
   res.render("dashboard", { user: userInfo, tracks: tracks.items });
   console.log(tracks)
+})
+
+app.get("/recommendations", async(req,res) => {
+  const artist_id = req.query.artist;
+  const track_id = req.query.track;
+
+  const params = new URLSearchParams({
+    seed_artist: artist_id,
+    seed_genres: "rock",
+    seed_tracks: track_id
+  })
+
+  const data = await getData('/recommendation?' + params);
+  res.render("recommendation");
 })
 
 let listener = app.listen(3000, function () {
