@@ -1,9 +1,13 @@
 import fetch from "node-fetch";
 import express from "express";
 
-const spotify_client_id = `${process.env.SPOTIFY_CLIENT_ID}`
-const spotify_client_secret = `${process.env.SPOTIFY_CLIENT_SECRET}`;
+//const spotify_client_id = `${process.env.SPOTIFY_CLIENT_ID}`
+const spotify_client_id = 'b32001087f804ee7a69d045e5a1ca07c'
+//const spotify_client_secret = `${process.env.SPOTIFY_CLIENT_SECRET}`;
+const spotify_client_secret = '12888a6f30ec46ffb9948af158368d0f'
 const spotify_redirect_uri = "http://localhost:3000/callback";
+
+global.access_token;
 
 // This is all boilerplate using express functions to set up the server
 
@@ -28,18 +32,58 @@ app.get("/authorize", (req, res) => {
   var auth_query_parameters = new URLSearchParams({
     response_type: "code",
     client_id: spotify_client_id,
-    scope: "",
+    scope: "user-library-read",
     redirect_uri: spotify_redirect_uri
   })
-
+  console.log(spotify_client_id)
+  console.log(auth_query_parameters)
   res.redirect('https://accounts.spotify.com/authorize?' + auth_query_parameters.toString());
 });
 
-app.get("/callback", (req, res) => {
+app.get("/callback", async(req, res) => {
   const code = req.query.code;
   
-  var body
+  var body = new URLSearchParams({
+    code: code,
+    redirect_uri: spotify_redirect_uri,
+    grant_type: "authorization_code"
+  })
+
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'post',
+    body: body,
+    headers: {
+      "Content-type": "application/x-www-form-urlencoded",
+      Authorization:
+      "Basic " + Buffer.from(spotify_client_id + ":" + spotify_client_secret).toString("base64")
+    }
+  })
+
+  const data = await response.json();
+  global.access_token = data.access_token;
+
+  res.redirect("/dashboard");
+  
 });
+
+const getData = async (endpoint) => {
+  const response = await fetch("https://api.spotify.com/v1" + endpoint, {
+    method: "get",
+    headers: {
+      Authorization: "Bearer " + global.access_token
+    }
+  })
+
+  const data = await response.json();
+  return data;
+}
+
+app.get("/dashboard", async(req,res) => {
+  const userInfo = await getData("/me");
+  const tracks = await getData("/me/tracks?limit=10");
+  res.render("dashboard", { user: userInfo, tracks: tracks.items });
+  console.log(tracks)
+})
 
 let listener = app.listen(3000, function () {
   console.log(
