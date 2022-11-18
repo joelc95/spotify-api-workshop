@@ -5,9 +5,7 @@ const require = createRequire(import.meta.url);
 require("dotenv").config();
 
 var spotify_client_id = process.env.SPOTIFY_CLIENT_ID;
-// const spotify_client_id = 'b32001087f804ee7a69d045e5a1ca07c'
 var spotify_client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-// const spotify_client_secret = '8beea0d73dba41c7ab9544df96011799'
 const spotify_redirect_uri = "http://localhost:3000/callback";
 
 global.access_token;
